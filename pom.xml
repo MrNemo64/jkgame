@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>me.nemo_64</groupId>
+    <artifactId>SDP</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0-SNAPSHOT</version>
+    <modules>
+        <!-- <module>AA_Weather</module> -->
+        <module>AA_NPC</module>
+        <module>utilities</module>
+        <module>AA_Player</module>
+        <module>AA_Registry</module>
+        <module>AA_Engine</module>
+        <module>API_Engine</module>
+        <module>Front</module>
+    </modules>
+
+    <properties>
+        <conf.java.version>17</conf.java.version>
+        <conf.encode>UTF-8</conf.encode>
+        <conf.output>target</conf.output>
+
+        <maven.compiler.source>${conf.java.version}</maven.compiler.source>
+        <maven.compiler.target>${conf.java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>${conf.encode}</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.9.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

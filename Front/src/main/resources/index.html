@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+    <script
+      type="text/javascript"
+      src="https://github.com/processing/p5.js/releases/download/v1.5.0/p5.min.js"
+    ></script>
+  </head>
+  <body>
+    <div>
+      <label for="refreshDisplay">Refresh rate: </label>
+      <input
+        id="refreshInput"
+        onchange="refreshChanged()"
+        type="range"
+        min="10"
+        max="2000"
+        step="10"
+        value="1750"
+      />
+      <label for="refreshInput" id="refreshDisplay">1750</label>
+      <label for="refreshInput">ms</label>
+    </div>
+    <div>
+      <label for="mapInput">Request map url: </label>
+      <input
+        id="mapInput"
+        style="width: 50%"
+        value="http://127.0.0.1:5999/game"
+      />
+    </div>
+    <div>
+      <label for="playerInput">Request player url: </label>
+      <input
+        id="playerInput"
+        style="width: 50%"
+        value="http://127.0.0.1:6000/player/%id%"
+      />
+    </div>
+    <button id="runButton" onclick="toggleRunning()">Start</button>
+    <label id="winner"></label>
+    <br /><br />
+
+    <script type="text/javascript" defer>
+      let running = false;
+      const cellSize = 40;
+      const cellAmount = 20;
+      const refreshDisplay = document.getElementById("refreshDisplay");
+      const refreshInput = document.getElementById("refreshInput");
+      const requestPlayerInput = document.getElementById("playerInput");
+      const requestMapInput = document.getElementById("mapInput");
+      const runButton = document.getElementById("runButton");
+      const winnerLabel = document.getElementById("winner");
+      const botImageUrls = [
+        // %bot_images%
+        "https://img.icons8.com/ios-glyphs/512/bot.png",
+        "https://img.icons8.com/ios-glyphs/512/retro-robot.png",
+        "https://img.icons8.com/ios-glyphs/512/small-robot.png",
+      ];
+      const playerImageUrls = [
+        //"%player_images%"
+        "https://img.icons8.com/ios-glyphs/512/controller.png",
+        "https://img.icons8.com/ios-glyphs/512/joystick.png",
+        "https://img.icons8.com/ios-glyphs/512/nintendo-switch-pro-controller.png",
+        "https://img.icons8.com/ios-glyphs/512/joy-con.png",
+      ];
+      const foodImageUrls = [
+        // "%food_images%"
+        "https://img.icons8.com/color/512/banana.png",
+      ];
+      const mineImageUrls = [
+        // "%mine_images%"
+        "https://img.icons8.com/ios/512/air-raider.png",
+      ];
+      let botImages;
+      let playerImages;
+      let foodImages;
+      let mineImages;
+      let map;
+      const idImages = new Map();
+      const elements = new Map();
+
+      const processMap = (json) => {
+        const start = new Date().getTime();
+        const cities = json["cities"];
+        const gameElements = json["map"];
+        elements.clear();
+        let playerCount = 0;
+        let playerName = "";
+        gameElements.forEach((element) => {
+          let id = idOf(element);
+          if (
+            element["type"] ===
+            "me.nemo_64.sdp.engine.game.element.PlayerGameElement"
+          ) {
+            playerName = element["player-name"];
+            playerCount++;
+          }
+          if (!idImages.has(id)) assignImage(id, element["type"]);
+          elements.set(id, element);
+        });
+        if (playerCount == 1) {
+          winnerLabel.innerText = "Winner: " + playerName;
+        }
+        const end = new Date().getTime();
+        console.log("Map processed in " + (end - start) + "ms");
+      };
+
+      const assignImage = (id, type) => {
+        let image;
+        switch (type) {
+          case "me.nemo_64.sdp.engine.game.element.FoodGameElement":
+            image = randImage(foodImages);
+            break;
+          case "me.nemo_64.sdp.engine.game.element.MineGameElement":
+            image = randImage(mineImages);
+            break;
+          case "me.nemo_64.sdp.engine.game.element.NPCGameElement":
+            image = randImage(botImages);
+            break;
+          case "me.nemo_64.sdp.engine.game.element.PlayerGameElement":
+            image = randImage(playerImages);
+            break;
+        }
+        if (image) idImages.set(id, image);
+      };
+
+      const idOf = (obj) => {
+        let type = obj["type"];
+        let pos = obj["position"];
+        if (
+          type === "me.nemo_64.sdp.engine.game.element.PlayerGameElement" ||
+          type === "me.nemo_64.sdp.engine.game.element.NPCGameElement"
+        ) {
+          return obj["token"];
+        }
+        return pos[0] + " " + pos[1];
+      };
+
+      const requestMap = async () => {
+        try {
+          const start = new Date().getTime();
+          let url = requestMapInput.value;
+          let response = await fetch(url);
+          let map = await response.json();
+          const end = new Date().getTime();
+          console.log("Map requested in " + (end - start) + "ms");
+          processMap(map);
+        } catch (e) {
+          console.error("Could not request map: " + e);
+        }
+        if (running) setTimeout(requestMap, delay());
+      };
+
+      function setup() {
+        createCanvas(cellSize * cellAmount, cellSize * cellAmount);
+        botImages = botImageUrls.map(loadImage);
+        playerImages = playerImageUrls.map(loadImage);
+        foodImages = foodImageUrls.map(loadImage);
+        mineImages = mineImageUrls.map(loadImage);
+      }
+
+      function draw() {
+        background(200);
+        for (let [key, element] of elements) {
+          let [x, y] = element["position"];
+          image(
+            idImages.get(key),
+            x * cellSize,
+            y * cellSize,
+            cellSize,
+            cellSize
+          );
+        }
+      }
+
+      const toggleRunning = () => {
+        if (!running) {
+          console.log("START");
+          running = true;
+          runButton.textContent = "Stop";
+          setTimeout(requestMap, delay());
+        } else {
+          runButton.textContent = "Start";
+          running = false;
+        }
+      };
+
+      const delay = () => {
+        return refreshInput.value;
+      };
+
+      const requestPlayer = async (player) => {
+        try {
+          let url = requestPlayerInput.value.replace("%id%", player);
+          let response = await fetch(url);
+          let json = await response.json();
+          return json;
+        } catch (e) {
+          console.error("Could not fetch " + player + ": " + e);
+          return undefined;
+        }
+      };
+
+      const randImage = (images) => {
+        return images[Math.floor(Math.random() * images.length)];
+      };
+
+      const refreshChanged = () => {
+        refreshDisplay.innerText = refreshInput.value;
+      };
+    </script>
+  </body>
+</html>
